@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  fastchat-controller:
+    image: fastchat:latest
+    entrypoint: [ "python3", "-m", "fastchat.serve.controller", "--host", "0.0.0.0", "--port", "21001" ]
+  fastchat-model-worker:
+    volumes:
+      - huggingface:/root/.cache/huggingface
+    environment:
+      FASTCHAT_CONTROLLER_URL: http://fastchat-controller:21001
+    image: fastchat:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 4
+              capabilities: [ gpu ]
+    entrypoint: [ "python3", "-m", "fastchat.serve.model_worker", "--model-name", 'fastchat-t5-3b-v1.0', "--model-path", "lmsys/fastchat-t5-3b-v1.0", "--worker-address", "http://fastchat-model-worker:21002", "--controller-address", "http://fastchat-controller:21001", "--host", "0.0.0.0", "--port", "21002", "--num-gpus", "4" ]
+  chatglm-model-worker:
+    volumes:
+      - huggingface:/root/.cache/huggingface
+    environment:
+      FASTCHAT_CONTROLLER_URL: http://fastchat-controller:21001
+    image: fastchat:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 4
+              capabilities: [ gpu ]
+    entrypoint: [ "python3", "-m", "fastchat.serve.model_worker", "--model-name", 'chatglm-6b', "--model-path", "THUDM/chatglm-6b", "--worker-address", "http://chatglm-model-worker:21003", "--controller-address", "http://fastchat-controller:21001", "--host", "0.0.0.0", "--port", "21003", "--num-gpus", "4" ]
+  fastchat-api-server:
+    environment:
+      FASTCHAT_CONTROLLER_URL: http://fastchat-controller:21001
+    image: fastchat:latest
+    ports:
+      - "8000:8000"
+    entrypoint: [ "python3", "-m", "fastchat.serve.openai_api_server", "--host", "0.0.0.0", "--port", "8000", "--controller-address", "http://fastchat-controller:21001" ]
+volumes:
+  huggingface:
