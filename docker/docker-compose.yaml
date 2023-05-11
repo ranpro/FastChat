@@ -32,6 +32,20 @@ services:
               count: 4
               capabilities: [ gpu ]
     entrypoint: [ "python3", "-m", "fastchat.serve.model_worker", "--model-name", 'chatglm-6b', "--model-path", "THUDM/chatglm-6b", "--worker-address", "http://chatglm-model-worker:21003", "--controller-address", "http://fastchat-controller:21001", "--host", "0.0.0.0", "--port", "21003", "--num-gpus", "4" ]
+  vicuna-model-worker:
+    volumes:
+      - huggingface:/root/.cache/huggingface
+    environment:
+      FASTCHAT_CONTROLLER_URL: http://fastchat-controller:21001
+    image: fastchat:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 4
+              capabilities: [ gpu ]
+    entrypoint: [ "python3", "-m", "fastchat.serve.model_worker", "--model-name", 'vicuna-7b-delta-v1.1', "--model-path", "lmsys/vicuna-7b-delta-v1.1", "--worker-address", "http://vicuna-model-worker:21004", "--controller-address", "http://fastchat-controller:21001", "--host", "0.0.0.0", "--port", "21004", "--num-gpus", "4" ]
   fastchat-api-server:
     environment:
       FASTCHAT_CONTROLLER_URL: http://fastchat-controller:21001
